@@ -10,7 +10,7 @@ maintainers = [
     { name = "Wei Tian", email = "wtian@salk.edu" }
 ]
 urls.Documentation = "https://lhqing.github.io/ALLCools/intro.html"
-urls.Source = "https://github.com/lhqing/ALLCools"
+urls.Source = "https://github.com/DingWB/ALLCools"
 urls.Home-page = "https://github.com/lhqing/ALLCools"
 version = "1.0.21"
 requires-python = ">=3.7"
