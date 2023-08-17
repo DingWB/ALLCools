@@ -104,7 +104,7 @@ def _leiden_runner(g, random_states, partition_type, **partition_kwargs):
     The leiden clustering repeated len(random_states) times with different random states,
     return all clusters as a pd.DataFrame.
     """
-    results = []
+    results = {}
     for seed in random_states:
         part = leidenalg.find_partition(g, partition_type, seed=seed, **partition_kwargs)
         groups = np.array(part.membership)
@@ -112,10 +112,10 @@ def _leiden_runner(g, random_states, partition_type, **partition_kwargs):
             values=groups.astype("U"),
             categories=natsorted(np.unique(groups).astype("U")),
         )
-        results.append(groups)
+        results[seed]=groups
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-        result_df = pd.DataFrame(results, columns=random_states)
+        result_df = pd.DataFrame(results)
     return result_df
 
 
@@ -377,9 +377,9 @@ class ConsensusClustering:
                 except Exception as exc:
                     print(f"_leiden_runner generated an exception: {exc}")
                     raise exc
-        total_result = pd.concat(results, axis=1, sort=True)
+        total_result = pd.concat(results, axis=1, sort=True) #horizontally
         self.leiden_result_df = total_result
-        cluster_count = self.leiden_result_df.apply(lambda i: i.unique().size)
+        cluster_count = self.leiden_result_df.apply(lambda i: i.nunique())
         print(
             f"Found {cluster_count.min()} - {cluster_count.max()} clusters, "
             f"mean {cluster_count.mean():.1f}, std {cluster_count.std():.2f}"
