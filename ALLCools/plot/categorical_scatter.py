@@ -249,7 +249,7 @@ def categorical_scatter(
         )
 
     # deal with outline
-    if outline:
+    if not outline is None:
         if isinstance(outline, str):
             _data["outline"] = _take_data_series(data, outline)
         else:

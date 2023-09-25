@@ -30,7 +30,7 @@ def _bin_sf(cov, mc, p):
 
 def _cell_sf(cell_count_df):
     mc_sum, cov_sum = cell_count_df.sum()
-    p = mc_sum / (cov_sum + 0.000001)  # prevent empty allc error
+    p = mc_sum / (cov_sum + 0.000001)  # prevent empty allc error # global methylation rate (p) across all CG/CH in a cell
     pv = cell_count_df.apply(lambda x: _bin_sf(x["cov"], x["mc"], p), axis=1).astype("float16")
     return pv
 
@@ -307,7 +307,7 @@ def generate_dataset(
     # determine parallel chunk size
     n_sample = allc_table.size
     if chunk_size is None:
-        chunk_size = min(n_sample, 50)
+        / = min(n_sample, 50)
 
     # prepare regions and determine quantifiers
     pathlib.Path(output_path).mkdir(exist_ok=True)
