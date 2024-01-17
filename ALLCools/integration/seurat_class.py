@@ -729,10 +729,14 @@ class SeuratIntegration:
             # correct dimensionality reduced matrix only
             corrected = [normalize(adata_list[i].obsm[key_correct], axis=1) for i in range(self.n_dataset)]
 
+        try:
+            data=np.array(corrected)
+        except:
+            data=np.array(corrected,dtype=object)
         for xx in self.alignments:
             print(xx)
             corrected = self.transform(
-                data=np.array(corrected),
+                data=data,
                 ref=xx[0],
                 qry=xx[1],
                 npc=n_components,
