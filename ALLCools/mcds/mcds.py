@@ -601,7 +601,12 @@ class MCDS(xr.Dataset):
             feature_bed_df = self.get_feature_bed(var_dim=var_dim)
             feature_bed = BedTool.from_dataframe(feature_bed_df)
             black_list_bed = BedTool(black_list_path)
-            black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
+            try:
+                black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
+            except:
+                import pybedtools
+                pybedtools.helpers.set_bedtools_path(path=os.path.dirname(sys.executable))
+                black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
             try:
                 black_feature_index = black_feature.to_dataframe().set_index(["chrom", "start", "end"]).index
             except pd.errors.EmptyDataError:
