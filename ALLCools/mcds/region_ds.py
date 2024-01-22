@@ -12,6 +12,8 @@ import pybedtools
 import pyBigWig
 import xarray as xr
 import yaml
+import pybedtools
+pybedtools.helpers.set_bedtools_path(path=os.path.dirname(sys.executable))
 from pybedtools import BedTool
 
 from ALLCools.utilities import parse_chrom_size
@@ -63,12 +65,7 @@ def _bed_intersection(bed: pybedtools.BedTool, path, g, region_index, bed_sorted
         warnings.simplefilter("ignore")
         query_bed = _region_bed_sorted(path, g, bed_sorted)
         try:
-            try:
-                df = bed.intersect(query_bed, wa=True, f=fraction, g=g, sorted=True).to_dataframe()
-            except:
-                import pybedtools
-                pybedtools.helpers.set_bedtools_path(path=os.path.dirname(sys.executable))
-                df = bed.intersect(query_bed, wa=True, f=fraction, g=g, sorted=True).to_dataframe()
+            df = bed.intersect(query_bed, wa=True, f=fraction, g=g, sorted=True).to_dataframe()
             if df.shape[0] == 0:
                 regions_idx = pd.Series([])
             else:

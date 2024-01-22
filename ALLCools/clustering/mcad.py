@@ -2,8 +2,9 @@ import warnings
 import os,sys
 import numpy as np
 import pandas as pd
+import pybedtools
+pybedtools.helpers.set_bedtools_path(path=os.path.dirname(sys.executable))
 from pybedtools import BedTool
-
 
 def remove_black_list_region(adata, black_list_path, region_axis=1, f=0.2):
     """
@@ -30,12 +31,7 @@ def remove_black_list_region(adata, black_list_path, region_axis=1, f=0.2):
             raise ValueError("region_axis should be 0 or 1.")
         feature_bed = BedTool.from_dataframe(feature_bed_df)
         black_list_bed = BedTool(black_list_path)
-        try:
-            black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
-        except:
-            import pybedtools
-            pybedtools.helpers.set_bedtools_path(path=os.path.dirname(sys.executable))
-            black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
+        black_feature = feature_bed.intersect(black_list_bed, f=f, wa=True)
         try:
             black_feature_index = black_feature.to_dataframe().set_index(["chrom", "start", "end"]).index
             black_feature_id = pd.Index(
