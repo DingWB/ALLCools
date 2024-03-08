@@ -27,11 +27,7 @@ def _text_anno_scatter(
     }
     if text_anno_kws is not None:
         _text_anno_kws.update(text_anno_kws)
-    
-    if type(text_anno_kws['color'])==dict:
-        colors=text_anno_kws.pop('color')
-    else:
-        colors=text_anno_kws['color']
+    colors=text_anno_kws.pop('color','black')
     # plot each text
     text_list = []
     for text, sub_df in data.groupby(anno_col):
