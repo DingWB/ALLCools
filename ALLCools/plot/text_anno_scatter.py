@@ -16,6 +16,7 @@ def _text_anno_scatter(
     dodge_kws=None,
     linewidth=0.5,
     labelsize=5,
+    bbox_alpha=0.7
 ):
     """Add text annotation to a scatter plot."""
     # prepare kws
@@ -50,7 +51,7 @@ def _text_anno_scatter(
         if _fc is None:
             bbox=None
         else:
-            bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth}
+            bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth,'alpha':bbox_alpha}
         text = ax.text(
             _x,
             _y,

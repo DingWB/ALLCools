@@ -32,6 +32,7 @@ def categorical_scatter(
     text_anno=None,
     text_anno_kws=None,
     text_anno_palette=None,
+    text_bbox_alpha=0.7,
     text_transform=None,
     dodge_text=False,
     dodge_kws=None,
@@ -246,6 +247,7 @@ def categorical_scatter(
             anno_col="text_anno",
             text_anno_kws=text_anno_kws,
             labelsize=labelsize,
+            bbox_alpha=text_bbox_alpha
         )
 
     # deal with outline
