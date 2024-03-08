@@ -47,13 +47,17 @@ def _text_anno_scatter(
             color=colors[text]
         else:
             color=colors
+        if _fc is None:
+            bbox=None
+        else:
+            bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth}
         text = ax.text(
             _x,
             _y,
             text,
             color=color,
             fontdict=_text_anno_kws,
-            bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth},
+            bbox=bbox,
         )
         text_list.append(text)
 
