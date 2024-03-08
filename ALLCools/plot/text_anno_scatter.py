@@ -27,7 +27,11 @@ def _text_anno_scatter(
     }
     if text_anno_kws is not None:
         _text_anno_kws.update(text_anno_kws)
-
+    
+    if type(text_anno_kws['color'])==dict:
+        colors=text_anno_kws.pop('color')
+    else:
+        colors=text_anno_kws['color']
     # plot each text
     text_list = []
     for text, sub_df in data.groupby(anno_col):
@@ -43,10 +47,15 @@ def _text_anno_scatter(
             _fc = palette[text]
         else:
             _fc = face_color
+        if type(colors)==dict:
+            color=colors[text]
+        else:
+            color=colors
         text = ax.text(
             _x,
             _y,
             text,
+            color=color,
             fontdict=_text_anno_kws,
             bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth},
         )
