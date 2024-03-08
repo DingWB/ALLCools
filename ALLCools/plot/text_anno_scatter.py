@@ -16,7 +16,7 @@ def _text_anno_scatter(
     dodge_kws=None,
     linewidth=0.5,
     labelsize=5,
-    bbox_alpha=0.7
+    bbox_alpha=1
 ):
     """Add text annotation to a scatter plot."""
     # prepare kws
