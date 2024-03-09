@@ -26,8 +26,10 @@ def _text_anno_scatter(
         "horizontalalignment": "center",
         "verticalalignment": "center",
     }
-    if text_anno_kws is not None:
-        _text_anno_kws.update(text_anno_kws)
+    if text_anno_kws is None:
+        text_anno_kws={}
+    _text_anno_kws.update(text_anno_kws)
+    
     colors=text_anno_kws.pop('color','black')
     # plot each text
     text_list = []
