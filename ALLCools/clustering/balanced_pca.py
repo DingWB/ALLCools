@@ -42,7 +42,7 @@ def log_scale(adata, method="standard", with_mean=False, with_std=True, max_valu
         # already log transformed
         print("adata.X is already log transformed, skip log step.")
     else:
-        adata.X = np.log(adata.X)
+        adata.X = np.log(adata.X+1)
         adata.uns["log"] = True
 
     if scaler is not None:

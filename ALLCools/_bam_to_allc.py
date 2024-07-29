@@ -23,9 +23,9 @@ R1 R2 are mapped as their original orientation, therefore,
 both the C to T and G to A conversion reads can have forward and reverse strand alignment.
 We can not distinguish the conversion type by strand in input bam.
 Here I add a check using the YZ tag of hisat-3n BAM file or XG tag of bismark BAM file.
-If the YZ tag is "+" or XG tag is "CT", the read is C to T conversion, I change the flag to forward mapping
+If the YZ tag is "+" or XG tag is "CT", the read is C to T conversion, I change the flag to forward mapping (OT/OB, R2)
 no matter R1 or R2 by read.is_forward = True
-If the YZ tag is "-" or XG tag is "GA", the read is G to A conversion, I change the flag to reverse mapping
+If the YZ tag is "-" or XG tag is "GA", the read is G to A conversion, I change the flag to reverse mapping (CTOT/CTOB, R1)
 no matter R1 or R2 by read.is_forward = False
 In this case, the read orientation is the same as bismark bam file, and the following base
 count code no need to change.
