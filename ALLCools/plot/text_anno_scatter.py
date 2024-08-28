@@ -6,8 +6,6 @@ def _text_anno_scatter(
     ax,
     x: str,
     y: str,
-    edge_color=(0.5, 0.5, 0.5, 0.2),
-    face_color=(0.8, 0.8, 0.8, 0.2),
     palette: dict = None,
     dodge_text=False,
     anno_col="text_anno",
@@ -25,10 +23,14 @@ def _text_anno_scatter(
         "fontweight": "black",
         "horizontalalignment": "center",
         "verticalalignment": "center",
+        edge_color:(0.5, 0.5, 0.5, 0.2),
+        face_color:(0.8, 0.8, 0.8, 0.2),
     }
     if text_anno_kws is None:
         text_anno_kws={}
     _text_anno_kws.update(text_anno_kws)
+    face_color=_text_anno_kws.pop('face_color')
+    edge_color=_text_anno_kws.pop('edge_color')
     
     colors=text_anno_kws.pop('color','black')
     # plot each text
