@@ -1,4 +1,27 @@
 import pandas as pd
+import matplotlib
+import numpy as np
+
+def _calculate_luminance(color):
+	"""
+	Calculate the relative luminance of a color according to W3C standards
+
+	Parameters
+	----------
+	color : matplotlib color or sequence of matplotlib colors
+		Hex code, rgb-tuple, or html color name.
+	Returns
+	-------
+	luminance : float(s) between 0 and 1
+
+	"""
+	rgb = matplotlib.colors.colorConverter.to_rgba_array(color)[:, :3]
+	rgb = np.where(rgb <= 0.03928, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+	lum = rgb.dot([0.2126, 0.7152, 0.0722])
+	try:
+		return lum.item()
+	except ValueError:
+		return lum
 
 
 def _text_anno_scatter(
@@ -14,7 +37,8 @@ def _text_anno_scatter(
     dodge_kws=None,
     linewidth=0.5,
     labelsize=5,
-    bbox_alpha=1
+    bbox_alpha=1,
+    luminance=0.48
 ):
     """Add text annotation to a scatter plot."""
     # prepare kws
@@ -52,6 +76,9 @@ def _text_anno_scatter(
             color=colors[text]
         else:
             color=colors
+        lum = _calculate_luminance(color)
+        if lum > luminance:
+            color='black'
         if _fc is None:
             bbox=None
         else:
