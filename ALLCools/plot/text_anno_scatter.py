@@ -29,34 +29,23 @@ def _text_anno_scatter(
     ax,
     x: str,
     y: str,
-    palette: dict = None,
     dodge_text=False,
     anno_col="text_anno",
-    text_anno_kws=None,
+    text_kws=None,
     text_transform=None,
     dodge_kws=None,
-    linewidth=0.5,
-    labelsize=5,
-    bbox_alpha=1,
     luminance=0.48
 ):
     """Add text annotation to a scatter plot."""
     # prepare kws
-    _text_anno_kws = {
-        "fontsize": labelsize,
-        "fontweight": "black",
-        "horizontalalignment": "center",
-        "verticalalignment": "center",
-        'edge_color':(0.5, 0.5, 0.5, 0.2),
-        'face_color':(0.8, 0.8, 0.8, 0.2),
-    }
-    if text_anno_kws is None:
-        text_anno_kws={}
-    _text_anno_kws.update(text_anno_kws)
-    face_color=_text_anno_kws.pop('face_color')
-    edge_color=_text_anno_kws.pop('edge_color')
-    
-    colors=text_anno_kws.pop('color','black')
+    text_kws={} if text_kws is None else text_kws
+    text_kws.setdefault("fontsize",5)
+    text_kws.setdefault("fontweight","black")
+    text_kws.setdefault("ha","center") #horizontalalignment
+    text_kws.setdefault("va","center") #verticalalignment
+    text_kws.setdefault("color","black") #c
+    text_kws.setdefault("bbox",dict(boxstyle='round',edgecolor=(0.5, 0.5, 0.5, 0.2),fill=False,
+                                facecolor=(0.8, 0.8, 0.8, 0.2),alpha=1,linewidth=0.5))
     # plot each text
     text_list = []
     for text, sub_df in data.groupby(anno_col):
@@ -67,29 +56,22 @@ def _text_anno_scatter(
         if text.lower() in ["", "nan"]:
             continue
         _x, _y = sub_df[[x, y]].median()
-
-        if palette is not None:
-            _fc = palette[text]
-        else:
-            _fc = face_color
-        if type(colors)==dict:
-            color=colors[text]
-        else:
-            color=colors
-        lum = _calculate_luminance(color)
-        if lum > luminance:
-            color='black'
-        if _fc is None:
-            bbox=None
-        else:
-            bbox={"boxstyle": "round", "ec": edge_color, "fc": _fc, "linewidth": linewidth,'alpha':bbox_alpha}
+        
+        use_text_kws=text_kws.copy()
+        if isinstance(text_kws['bbox']['facecolor'],dict):
+            use_text_kws['bbox']['facecolor']=text_kws['bbox']['facecolor'][text]
+        if isinstance(text_kws['color'],dict):
+            use_color=text_kws['color'][text]
+            lum = _calculate_luminance(use_color)
+            if not luminance is None and lum > luminance:
+                use_color='black'
+            use_text_kws['color']=use_color
+        
         text = ax.text(
             _x,
             _y,
             text,
-            color=color,
-            fontdict=_text_anno_kws,
-            bbox=bbox,
+            **use_text_kws
         )
         text_list.append(text)
 

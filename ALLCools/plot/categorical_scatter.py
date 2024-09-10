@@ -30,9 +30,7 @@ def categorical_scatter(
     color=None,
     # text annotation
     text_anno=None,
-    text_anno_kws=None,
-    text_anno_palette=None,
-    text_bbox_alpha=1,
+    text_kws=None,
     text_transform=None,
     dodge_text=False,
     dodge_kws=None,
@@ -87,10 +85,18 @@ def categorical_scatter(
         specify single color for all the dots
     text_anno
         categorical col name or series for text annotation.
-    text_anno_kws
-        kwargs for text annotation.
-    text_anno_palette
-        palette for text annotation.
+    text_kws
+        kwargs pass to plt.text, see: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.text.html
+        including bbox, to see parameter for bbox, go to: https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
+        commonly used parameters are: 
+        ```
+        text_kws=dict(fontsize=5,fontweight='black',
+                    color='black', #color could be a dict, keys are text to be annotated
+                    bbox=dict(boxstyle='round',edgecolor=(0.5, 0.5, 0.5, 0.2),fill=False,
+                                facecolor=(0.8, 0.8, 0.8, 0.2), #facecolor could also be a dict
+                                alpha=1,linewidth=0.5)
+                    )
+        ```
     text_transform
         transform for text annotation.
     dodge_text
@@ -242,12 +248,9 @@ def categorical_scatter(
             y="y",
             dodge_text=dodge_text,
             dodge_kws=dodge_kws,
-            palette=text_anno_palette,
             text_transform=text_transform,
             anno_col="text_anno",
-            text_anno_kws=text_anno_kws,
-            labelsize=labelsize,
-            bbox_alpha=text_bbox_alpha
+            text_kws=text_kws,
         )
 
     # deal with outline
