@@ -65,8 +65,7 @@ def continuous_scatter(
     text_anno=None,
     dodge_text=False,
     dodge_kws=None,
-    text_anno_kws=None,
-    text_anno_palette=None,
+    text_kws=None,luminance=0.48,
     text_transform=None,
     axis_format="tiny",
     max_points=50000,
@@ -196,11 +195,10 @@ def continuous_scatter(
             y="y",
             dodge_text=dodge_text,
             dodge_kws=dodge_kws,
-            palette=text_anno_palette,
             text_transform=text_transform,
             anno_col="text_anno",
-            text_anno_kws=text_anno_kws,
-            labelsize=labelsize,
+            text_kws=text_anno_kws,
+            luminance=luminance,
         )
 
     # deal with outline
