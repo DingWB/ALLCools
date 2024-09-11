@@ -72,6 +72,7 @@ def _text_anno_scatter(
             lum = _calculate_luminance(use_text_kws['bbox']['facecolor'])
             if lum > luminance:
                 use_text_kws['color']='black'
+                use_text_kws['bbox']['edgecolor']='black'
         
         text = ax.text(
             _x,
