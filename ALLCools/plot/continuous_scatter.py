@@ -197,7 +197,7 @@ def continuous_scatter(
             dodge_kws=dodge_kws,
             text_transform=text_transform,
             anno_col="text_anno",
-            text_kws=text_anno_kws,
+            text_kws=text_kws,
             luminance=luminance,
         )
 
