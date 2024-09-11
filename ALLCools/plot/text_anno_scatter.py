@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib
 import numpy as np
+import copy
 
 def _calculate_luminance(color):
 	"""
@@ -44,8 +45,12 @@ def _text_anno_scatter(
     text_kws.setdefault("ha","center") #horizontalalignment
     text_kws.setdefault("va","center") #verticalalignment
     text_kws.setdefault("color","black") #c
-    text_kws.setdefault("bbox",dict(boxstyle='round',edgecolor=(0.5, 0.5, 0.5, 0.2),fill=False,
-                                facecolor=(0.8, 0.8, 0.8, 0.2),alpha=1,linewidth=0.5))
+    bbox=dict(boxstyle='round',edgecolor=(0.5, 0.5, 0.5, 0.2),fill=False,
+                                facecolor=(0.8, 0.8, 0.8, 0.2),alpha=1,linewidth=0.5)
+    text_kws.setdefault("bbox",bbox)
+    for key in bbox:
+        if key not in text_kws['bbox']:
+            text_kws['bbox'][key]=bbox[key]
     # plot each text
     text_list = []
     for text, sub_df in data.groupby(anno_col):
@@ -57,7 +62,7 @@ def _text_anno_scatter(
             continue
         _x, _y = sub_df[[x, y]].median()
         
-        use_text_kws=text_kws.copy()
+        use_text_kws=copy.deepcopy(text_kws) #text_kws.copy()
         if isinstance(text_kws['bbox']['facecolor'],dict):
             use_text_kws['bbox']['facecolor']=text_kws['bbox']['facecolor'][text]
         if isinstance(text_kws['color'],dict):

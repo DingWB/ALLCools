@@ -30,7 +30,7 @@ def categorical_scatter(
     color=None,
     # text annotation
     text_anno=None,
-    text_kws=None,
+    text_kws=None,luminance=None,
     text_transform=None,
     dodge_text=False,
     dodge_kws=None,
@@ -251,6 +251,7 @@ def categorical_scatter(
             text_transform=text_transform,
             anno_col="text_anno",
             text_kws=text_kws,
+            luminance=luminance,
         )
 
     # deal with outline
