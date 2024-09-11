@@ -67,11 +67,11 @@ def _text_anno_scatter(
             use_text_kws['bbox']['facecolor']=text_kws['bbox']['facecolor'][text]
         if isinstance(text_kws['color'],dict):
             use_color=text_kws['color'][text]
-            if not luminance is None:
-                lum = _calculate_luminance(use_text_kws['bbox']['facecolor'])
-                if lum > luminance:
-                    use_color='black'
             use_text_kws['color']=use_color
+        if not luminance is None:
+            lum = _calculate_luminance(use_text_kws['bbox']['facecolor'])
+            if lum > luminance:
+                use_text_kws['color']='black'
         
         text = ax.text(
             _x,
