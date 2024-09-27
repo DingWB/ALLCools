@@ -63,7 +63,7 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
         # i.e. 0 cov feature will provide no info
         prior_mean = cell_a / (cell_a + cell_b)
         if ndarray:
-            post_frac = post_frac / prior_mean[:, None]
+            post_frac = post_frac / prior_mean[:, None] #[:,None] = transpose, from 1d to 2d.
         else:
             post_frac = post_frac / prior_mean
         if clip_norm_value is not None:
@@ -73,7 +73,7 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
             else:
                 # xarray.DataArray
                 post_frac = post_frac.where(post_frac < clip_norm_value, clip_norm_value)
-    return post_frac
+    return post_frac,cell_a,cell_b
 
 
 def calculate_posterior_mc_frac_lazy(
@@ -99,7 +99,7 @@ def calculate_posterior_mc_frac_lazy(
     for chunk_id, cell_list_chunk in enumerate(cell_chunks):
         _mc_da = mc_da.sel(cell=cell_list_chunk)
         _cov_da = cov_da.sel(cell=cell_list_chunk)
-        post_rate = calculate_posterior_mc_frac(
+        post_rate,cell_a,cell_b = calculate_posterior_mc_frac(
             mc_da=_mc_da,
             cov_da=_cov_da,
             var_dim=var_dim,

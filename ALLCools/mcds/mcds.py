@@ -389,11 +389,16 @@ class MCDS(xr.Dataset):
         if var_dim not in self[da].dims:
             raise KeyError(f"{var_dim} is not a dimension of {da}")
 
-        frac = self._calculate_frac(
+        frac,cell_a,cell_b = self._calculate_frac(
             var_dim=var_dim, da=da, normalize_per_cell=normalize_per_cell, clip_norm_value=clip_norm_value
         )
         self[da + "_" + da_suffix] = frac
-        return
+        # prior_mean = cell_a / (cell_a + cell_b)
+        # self[da + "_cell_a"] = cell_a
+        # self[da + "_cell_b"] = cell_b
+        # self[da + "_prior_mean"] = prior_mean
+        
+        return cell_a,cell_b
 
     def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value):
         """Calculate mC frac data array for certain feature type (var_dim)."""
@@ -401,14 +406,14 @@ class MCDS(xr.Dataset):
 
         da_mc = self[da].sel(count_type="mc")
         da_cov = self[da].sel(count_type="cov")
-        frac = calculate_posterior_mc_frac(
+        frac,cell_a,cell_b = calculate_posterior_mc_frac(
             mc_da=da_mc,
             cov_da=da_cov,
             var_dim=var_dim,
             normalize_per_cell=normalize_per_cell,
             clip_norm_value=clip_norm_value,
         )
-        return frac
+        return frac,cell_a,cell_b
 
     def add_m_value(self, var_dim=None, da=None, alpha=0.01, da_suffix="mvalue"):
         """
@@ -441,7 +446,7 @@ class MCDS(xr.Dataset):
         if var_dim not in self[da].dims:
             raise KeyError(f"{var_dim} is not a dimension of {da}")
 
-        frac = self._calculate_frac(var_dim=var_dim, da=da, normalize_per_cell=False, clip_norm_value=None)
+        frac,cell_a,cell_b = self._calculate_frac(var_dim=var_dim, da=da, normalize_per_cell=False, clip_norm_value=None)
 
         m_value = np.log2((frac + alpha) / (1 - frac + alpha))
 
