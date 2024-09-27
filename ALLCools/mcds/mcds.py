@@ -394,11 +394,10 @@ class MCDS(xr.Dataset):
         )
         self[da + "_" + da_suffix] = frac
         # prior_mean = cell_a / (cell_a + cell_b)
-        # self[da + "_cell_a"] = cell_a
-        # self[da + "_cell_b"] = cell_b
-        # self[da + "_prior_mean"] = prior_mean
-        
-        return cell_a,cell_b
+        self["cell_a"] = cell_a
+        self["cell_b"] = cell_b
+        # self["prior_mean"] = prior_mean
+        return 
 
     def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value):
         """Calculate mC frac data array for certain feature type (var_dim)."""

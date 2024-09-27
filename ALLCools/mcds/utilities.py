@@ -24,11 +24,11 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
     if isinstance(raw_frac, np.ndarray):
         # np.ndarray
         ndarray = True
-    else:
+    else: #xarray.core.dataarray.DataArray
         ndarray = False
 
     if ndarray:
-        cell_rate_mean = np.nanmean(raw_frac, axis=1)
+        cell_rate_mean = np.nanmean(raw_frac, axis=1) #shape=(No. of cells, 2), 2 mc_types
         cell_rate_var = np.nanvar(raw_frac, axis=1)
     else:
         # assume xr.DataArray
@@ -36,7 +36,7 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
             cell_rate_mean = raw_frac.mean(axis=1)  # this skip na
             cell_rate_var = raw_frac.var(axis=1)  # this skip na
         else:
-            cell_rate_mean = raw_frac.mean(dim=var_dim)  # this skip na
+            cell_rate_mean = raw_frac.mean(dim=var_dim)  # this skip na, much more fasterer than np.nanmean
             cell_rate_var = raw_frac.var(dim=var_dim)  # this skip na
 
     # based on beta distribution mean, var
@@ -51,7 +51,7 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
     if ndarray:
         post_frac = (mc_da + cell_a[:, None]) / (cov_da + cell_a[:, None] + cell_b[:, None])
     else:
-        post_frac = (mc_da + cell_a) / (cov_da + cell_a + cell_b)
+        post_frac = (mc_da + cell_a) / (cov_da + cell_a + cell_b) #(cell: 6144, gene: 38043, mc_type: 2)
 
     if normalize_per_cell:
         # there are two ways of normalizing per cell, by posterior or prior mean:
@@ -73,6 +73,9 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
             else:
                 # xarray.DataArray
                 post_frac = post_frac.where(post_frac < clip_norm_value, clip_norm_value)
+    if ndarray:
+        cell_a=cell_a[:,None] #add a empty dimension: mc_type
+        cell_b=cell_b[:,None]
     return post_frac,cell_a,cell_b
 
 
