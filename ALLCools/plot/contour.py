@@ -1,8 +1,12 @@
 import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 
-from .utilities import zoom_min_max
-
+def zoom_min_max(vmin, vmax, scale):
+    """Zoom min and max value."""
+    width = vmax - vmin
+    width_zoomed = width * scale
+    delta_value = (width_zoomed - width) / 2
+    return vmin - delta_value, vmax + delta_value
 
 def density_contour(
     ax,
