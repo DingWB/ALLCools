@@ -90,7 +90,7 @@ def _text_anno_scatter(
                 "force_points": (0.02, 0.05),
                 "arrowprops": {
                     "arrowstyle": "->",
-                    "fc": edge_color,
+                    "fc": "black",
                     "ec": "none",
                     "connectionstyle": "angle,angleA=-90,angleB=180,rad=5",
                 },
