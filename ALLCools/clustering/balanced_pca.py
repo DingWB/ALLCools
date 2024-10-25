@@ -113,7 +113,7 @@ def significant_pc_test(adata: anndata.AnnData, p_cutoff=0.1, update=True, obsm=
 
     if update:
         adata.obsm[obsm] = pcs[:, :n_components]
-        print(f"Changing adata.obsm[{obsm}] from shape {pcs.shape} to {adata.obsm[obsm].shape}")
+        print(f"Changing adata.obsm[{obsm}] from shape {pcs.shape} to {adata.obsm[{obsm}].shape}")
     return n_components
 
 
