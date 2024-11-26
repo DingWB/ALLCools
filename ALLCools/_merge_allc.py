@@ -473,6 +473,7 @@ def merge_allc_files(
     # can not treat that as binarize, need to reimplement merge ALLC to support binarize in merge allc
     log.info("Right now binarize is not used, need fix this in merge ALLC fiction, set binarize=False")
     binarize = False
+    chrom_size_path=os.path.expanduser(chrom_size_path)
 
     # TODO write test
     # a list of str, contain all absolute non-soft-link paths

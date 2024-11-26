@@ -276,6 +276,7 @@ def extract_allc(
     parallel = False
     if region is None:
         if chrom_size_path is not None:
+            chrom_size_path=os.path.expanduser(chrom_size_path)
             chrom_dict = parse_chrom_size(chrom_size_path)
             region = " ".join(chrom_dict.keys())
             if cpu > 1:

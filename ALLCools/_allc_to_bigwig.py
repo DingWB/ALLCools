@@ -118,7 +118,7 @@ def allc_to_bigwig(allc_path, output_prefix, bin_size, mc_contexts, chrom_size_p
     if strandness not in {"split", "both"}:
         raise ValueError(f'strandness need to be "split" or "both", got "{strandness}"')
 
-    chrom_sizes = parse_chrom_size(chrom_size_path)
+    chrom_sizes = parse_chrom_size(os.path.expanduser(chrom_size_path))
     chrom_sizes_list = [(k, v) for k, v in chrom_sizes.items()]
 
     # create bigwig file handles for each case

@@ -22,7 +22,7 @@ ALLOW_QUANT_TYPES = ["count", "hypo-score", "hyper-score"]
 @lru_cache(99999)
 def _bin_sf(cov, mc, p):
     if cov > mc:
-        return stats.binom(cov, p).sf(mc)
+        return stats.binom(cov, p).sf(mc) #sf(0.2) = 1- cdf(0.2)
     else:
         # cov == mc, sf = 0
         return 0
@@ -194,14 +194,15 @@ def _calculate_pv(data, reverse_value, obs_dim, var_dim, cutoff=0.9):
     pv = []
     for cell in data.get_index(obs_dim):
         value = _cell_sf(data.sel(cell=cell).to_pandas())
-        pv.append(value)
-    pv = np.array(pv)
+        pv.append(value) #probability of having mc greater then the observed mc based on the binomial distribution (observed cov and global mean: total mc / total cov)
+    pv = np.array(pv) # if pv < 0.05, means the current mc is very large (significantly larger than average), that is hypermethylated
+    # if pv > 0.95, 1-pv < 0.05, means the current mc is very small (significantly smaller than average), that is hypomethylated.
 
     if reverse_value:
         pv = 1 - pv
 
     # get rid of small values, save space and memory
-    pv[pv < cutoff] = 0
+    pv[pv < cutoff] = 0 # if reverse_value==False, 1 means sigficantly hypomethylated, 0 means not sigficantly changed. If reverse_value==True, 1 means hypermethylated
     pv = xr.DataArray(pv, coords=[data.coords[obs_dim], data.coords[var_dim]], dims=[obs_dim, var_dim])
     pv = pv.astype("float16")
     return pv
@@ -296,6 +297,7 @@ def generate_dataset(
     -------
     output_path
     """
+    chrom_size_path=os.path.expanduser(chrom_size_path)
     if isinstance(allc_table, (str, pathlib.Path)):
         allc_table = pd.read_csv(allc_table, sep="\t", header=None, index_col=0).squeeze()
         allc_table.index.name = obs_dim
@@ -312,6 +314,7 @@ def generate_dataset(
     # prepare regions and determine quantifiers
     pathlib.Path(output_path).mkdir(exist_ok=True)
     tmp_dir = f"{output_path}_tmp"
+
     datasets = _determine_datasets(regions, quantifiers, chrom_size_path, tmp_dir)
 
     # copy chrom_size_path to output_path
