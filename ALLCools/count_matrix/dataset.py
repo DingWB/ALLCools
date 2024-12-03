@@ -1,10 +1,10 @@
+import os
 import pathlib
 import subprocess
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import lru_cache
 from shutil import rmtree
-
 import numpy as np
 import pandas as pd
 import pybedtools

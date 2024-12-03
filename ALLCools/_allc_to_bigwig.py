@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import os
 import pyBigWig
 import pysam
 

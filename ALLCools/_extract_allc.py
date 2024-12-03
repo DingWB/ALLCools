@@ -2,7 +2,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from subprocess import run
 from typing import Callable, Tuple, Union
-
+import os
 import pandas as pd
 
 from ._doc import *
