@@ -10,7 +10,8 @@ import pandas as pd
 import scanpy as sc
 from scipy.stats import ks_2samp
 from sklearn.preprocessing import RobustScaler, StandardScaler
-
+import os
+os.environ['SCIPY_ARRAY_API'] = '1'
 
 def log_scale(adata, method="standard", with_mean=False, with_std=True, max_value=10, scaler=None):
     """
