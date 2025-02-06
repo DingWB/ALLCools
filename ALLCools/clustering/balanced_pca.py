@@ -167,7 +167,10 @@ def balanced_pca(adata: anndata.AnnData, groups: str = "pre_clusters", max_cell_
     """
     # downsample large clusters
     use_cells = []
-    size_to_downsample = max(int(adata.shape[0] * max_cell_prop), 50)
+    if max_cell_prop < 1:
+        size_to_downsample = max(int(adata.shape[0] * max_cell_prop), 50)
+    else:
+        size_to_downsample=max_cell_prop
     for _, sub_df in adata.obs.groupby(groups):
         if sub_df.shape[0] > size_to_downsample:
             use_cells += sub_df.sample(size_to_downsample, random_state=0).index.tolist()
