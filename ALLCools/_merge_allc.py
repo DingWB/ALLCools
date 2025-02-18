@@ -479,7 +479,13 @@ def merge_allc_files(
     # a list of str, contain all absolute non-soft-link paths
     allc_files: list = parse_file_paths(allc_paths)
     if len(allc_files) < 2:
-        raise ValueError("There is less than 2 files after parsing the provided allc_paths.")
+        allc_path=allc_files[0]
+        os.system(f"cp {allc_path} {output_path}")
+        if os.path.exists(allc_path + ".tbi"):
+            os.system(f"cp {allc_path}.tbi {output_path}.tbi")
+        print("Only 1 file identified, just copy and paste..")
+        return None
+        # raise ValueError("There is less than 2 files after parsing the provided allc_paths.")
 
     try:
         with open(output_path, "w"):
