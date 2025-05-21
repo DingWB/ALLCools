@@ -406,7 +406,7 @@ class MCDS(xr.Dataset):
         self["cell_a"] = cell_a
         self["cell_b"] = cell_b
         if sigma:
-            self["sigma"] = post_sigma
+            self[da + "_sigma"] = post_sigma
         # self["prior_mean"] = prior_mean
         return 
 
