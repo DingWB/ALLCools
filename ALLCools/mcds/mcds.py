@@ -360,6 +360,7 @@ class MCDS(xr.Dataset):
         normalize_per_cell=True,
         clip_norm_value=10,
         da_suffix="frac",
+        sigma=False
     ):
         """
         Add posterior mC rate data array for certain feature type (var_dim).
@@ -376,6 +377,9 @@ class MCDS(xr.Dataset):
             reset larger values in the normalized mC rate data array to this
         da_suffix
             name suffix appended to the calculated mC rate data array
+        sigma
+            Whether to calculate the posterior standard deviation, will be 
+            added into adata.layers['sigma']
         """
         var_dim = self._verify_dim(var_dim, mode="var")
 
@@ -389,30 +393,43 @@ class MCDS(xr.Dataset):
         if var_dim not in self[da].dims:
             raise KeyError(f"{var_dim} is not a dimension of {da}")
 
-        frac,cell_a,cell_b = self._calculate_frac(
-            var_dim=var_dim, da=da, normalize_per_cell=normalize_per_cell, clip_norm_value=clip_norm_value
+        results = self._calculate_frac(
+            var_dim=var_dim, da=da, normalize_per_cell=normalize_per_cell, clip_norm_value=clip_norm_value,
+            sigma=sigma
         )
+        if not sigma:
+            frac,cell_a,cell_b=results
+        else:
+            frac,cell_a,cell_b,post_sigma=results
         self[da + "_" + da_suffix] = frac
         # prior_mean = cell_a / (cell_a + cell_b)
         self["cell_a"] = cell_a
         self["cell_b"] = cell_b
+        if sigma:
+            self["sigma"] = post_sigma
         # self["prior_mean"] = prior_mean
         return 
 
-    def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value):
+    def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value,sigma=False):
         """Calculate mC frac data array for certain feature type (var_dim)."""
         var_dim = self._verify_dim(dim=var_dim, mode="var")
 
         da_mc = self[da].sel(count_type="mc")
         da_cov = self[da].sel(count_type="cov")
-        frac,cell_a,cell_b = calculate_posterior_mc_frac(
+        results = calculate_posterior_mc_frac(
             mc_da=da_mc,
             cov_da=da_cov,
             var_dim=var_dim,
             normalize_per_cell=normalize_per_cell,
-            clip_norm_value=clip_norm_value,
+            clip_norm_value=clip_norm_value,sigma=sigma
         )
-        return frac,cell_a,cell_b
+        if not sigma:
+            frac,cell_a,cell_b=results
+            return frac,cell_a,cell_b
+        else:
+            post_frac,cell_a,cell_b,post_sigma=results
+            return post_frac,cell_a,cell_b,post_sigma
+        
 
     def add_m_value(self, var_dim=None, da=None, alpha=0.01, da_suffix="mvalue"):
         """

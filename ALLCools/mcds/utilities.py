@@ -14,7 +14,7 @@ import yaml
 log = logging.getLogger()
 
 
-def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=True, clip_norm_value=10):
+def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=True, clip_norm_value=10,sigma=False):
     # so we can do post_frac only in a very small set of gene to prevent memory issue
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -45,6 +45,11 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
     # calculate alpha beta value for each cell
     cell_a = (1 - cell_rate_mean) * (cell_rate_mean**2) / cell_rate_var - cell_rate_mean
     cell_b = cell_a * (1 / cell_rate_mean - 1)
+    # standard deviation: sigma=sqrt(ab/((a+b+1)(a+b)^2))
+    # posterior standard deviation: sigma=sqrt((a+mc)(b+cov-mc)/((a+b+cov+1)(a+b+cov)^2))
+    if sigma:
+        # standard deviation per gene per cell; post_sigma.sel(mc_type='CGN').to_pandas()
+        post_sigma=np.sqrt((cell_a+mc_da)*(cell_b+cov_da-mc_da) / ((cell_a+cell_b+cov_da+1)*(cell_a+cell_b+cov_da)**2))
 
     # cell specific posterior rate
     post_frac: Union[np.ndarray, xr.DataArray]
@@ -76,7 +81,10 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
     if ndarray:
         cell_a=cell_a[:,None] #add a empty dimension: mc_type
         cell_b=cell_b[:,None]
-    return post_frac,cell_a,cell_b
+    if sigma:
+        return post_frac,cell_a,cell_b,post_sigma
+    else:
+        return post_frac,cell_a,cell_b
 
 
 def calculate_posterior_mc_frac_lazy(
