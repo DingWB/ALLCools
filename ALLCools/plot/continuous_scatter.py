@@ -240,7 +240,7 @@ def continuous_scatter(
         #         cbar_kws[k]=default_cbar_kws[k]
 
         if cax is None:
-            cax = inset_axes(ax, **default_cbar_kws)
+            cax = inset_axes(ax, **cbar_kws)
         cax = plot_colorbar(
             cax=cax,
             cmap=cmap,
