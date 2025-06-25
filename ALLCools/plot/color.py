@@ -102,7 +102,7 @@ def plot_colorbar(
     cmap,
     hue_norm,
     cnorm=None,
-    # label=None,
+    label=None,
     orientation="vertical",
     labelsize=4,
     linewidth=0.5,
@@ -125,8 +125,9 @@ def plot_colorbar(
     colorbar.locator = ticker.MaxNLocator(nbins=3)
     colorbar.update_ticks()
 
-    if not colorbar_label_kws is None:
-        colorbar.set_label(**colorbar_label_kws)
+    if colorbar_label_kws is None:
+        colorbar_label_kws={}
+    colorbar.set_label(label, **colorbar_label_kws)
     colorbar.outline.set_linewidth(linewidth)
     colorbar.ax.tick_params(size=labelsize, labelsize=labelsize, width=linewidth)
     return cax

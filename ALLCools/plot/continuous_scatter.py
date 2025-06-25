@@ -230,10 +230,6 @@ def continuous_scatter(
 
     # make color bar
     if colorbar and (hue is not None):
-        _colorbar_label_kws = {"fontsize": labelsize, "label": hue, "labelpad": 10, "rotation": 270}
-        if colorbar_label_kws is not None:
-            _colorbar_label_kws.update(colorbar_label_kws)
-
         # small ax for colorbar
         if cax is None:
             cax = inset_axes(ax, width="3%", height="25%", loc="lower right", borderpad=0)
@@ -242,11 +238,11 @@ def continuous_scatter(
             cmap=cmap,
             cnorm=cnorm,
             hue_norm=hue_norm,
-            # label=colorbar_label,
+            label=colorbar_label,
             labelsize=labelsize,
             orientation="vertical",
             linewidth=0.5,
-            colorbar_label_kws=_colorbar_label_kws
+            colorbar_label_kws=colorbar_label_kws #{"fontsize": labelsize, "label": hue, "labelpad": 10} #"rotation": 270
         )
         return_axes.append(cax)
 
