@@ -79,6 +79,7 @@ def continuous_scatter(
     outline_pad=2,
     return_fig=False,
     rasterized="auto",
+    cbar_kws=None
 ):
     # init figure if not provided
     if ax is None:
@@ -231,8 +232,12 @@ def continuous_scatter(
     # make color bar
     if colorbar and (hue is not None):
         # small ax for colorbar
+        default_cbar_kws=dict(width="3%", height="20%", loc="upper left", borderpad=0,bbox_to_anchor=(1,1))
+        if not cbar_kws is None:
+            default_cbar_kws.update(cbar_kws)
+
         if cax is None:
-            cax = inset_axes(ax, width="3%", height="25%", loc="lower right", borderpad=0)
+            cax = inset_axes(ax, **default_cbar_kws)
         cax = plot_colorbar(
             cax=cax,
             cmap=cmap,
