@@ -242,10 +242,10 @@ def continuous_scatter(
             cmap=cmap,
             cnorm=cnorm,
             hue_norm=hue_norm,
-            label=colorbar_label,
+            # label=colorbar_label,
             orientation="vertical",
-            labelsize=labelsize,
             linewidth=0.5,
+            colorbar_label_kws=_colorbar_label_kws
         )
         return_axes.append(cax)
 
