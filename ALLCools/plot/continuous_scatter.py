@@ -79,7 +79,7 @@ def continuous_scatter(
     outline_pad=2,
     return_fig=False,
     rasterized="auto",
-    cbar_kws=None
+    cbar_kws=dict(loc="lower right", borderpad=0,width="3%", height="20%")
 ):
     # init figure if not provided
     if ax is None:
@@ -235,9 +235,9 @@ def continuous_scatter(
         default_cbar_kws=dict(loc="upper left", borderpad=0,width="3%", height="20%") #bbox_to_anchor=(1,1)
         if cbar_kws is None:
             cbar_kws={}
-        for k in default_cbar_kws:
-            if k not in cbar_kws:
-                cbar_kws[k]=default_cbar_kws[k]
+        # for k in default_cbar_kws:
+        #     if k not in cbar_kws:
+        #         cbar_kws[k]=default_cbar_kws[k]
 
         if cax is None:
             cax = inset_axes(ax, **default_cbar_kws)
