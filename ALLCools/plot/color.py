@@ -104,7 +104,7 @@ def plot_colorbar(
     cnorm=None,
     # label=None,
     orientation="vertical",
-    # labelsize=4,
+    labelsize=4,
     linewidth=0.5,
     colorbar_label_kws=None,
 ):

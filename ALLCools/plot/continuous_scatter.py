@@ -243,6 +243,7 @@ def continuous_scatter(
             cnorm=cnorm,
             hue_norm=hue_norm,
             # label=colorbar_label,
+            labelsize=labelsize,
             orientation="vertical",
             linewidth=0.5,
             colorbar_label_kws=_colorbar_label_kws
