@@ -13,7 +13,7 @@ def _make_hypo_hyper_matrix(series, dmr_values):
     rows = []
     cols = []
     datas = []
-    for i, (_, samples) in enumerate(series.dropna().iteritems()):
+    for i, (_, samples) in enumerate(series.dropna().items()):
         for sample in samples.split(","):
             rows.append(i)
             cols.append(sample_int[sample])
@@ -44,7 +44,7 @@ def methylpy_to_region_ds(dmr_path, output_dir):
 
     hyper_matrix = _make_hypo_hyper_matrix(dmr_infos["hypermethylated_samples"], dmr_values)
     hypo_matrix = _make_hypo_hyper_matrix(dmr_infos["hypomethylated_samples"], dmr_values)
-    dmr_state = hyper_matrix - hypo_matrix
+    dmr_state = hyper_matrix - hypo_matrix # -1: hypomethylated, 1: hypermethylated, 0: not changed
     dmr_ds = xr.Dataset({"dmr_state": dmr_state, "dmr_da_frac": xr.DataArray(dmr_values)})
 
     dmr_ds.coords.update(
