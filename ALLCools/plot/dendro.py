@@ -1,9 +1,8 @@
 import matplotlib as mpl
 import seaborn as sns
-from matplotlib.cm import get_cmap
 from matplotlib.colors import Normalize
 from scipy.cluster.hierarchy import dendrogram as _dendrogram
-
+from .color import get_cmap
 
 def straight_branch(ax, a, b, plot_kws):
     """Draw link line between a and b."""

@@ -4,10 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from matplotlib import ticker
-from matplotlib.cm import get_cmap
 from matplotlib.colorbar import ColorbarBase
 from matplotlib.colors import ListedColormap, Normalize
 
+def get_cmap(cmap):
+	try:
+		return plt.colormaps.get(cmap)  # matplotlib >= 3.5.1?
+	except:
+		return plt.get_cmap(cmap)  # matplotlib <=3.4.3?
 
 def _continuous_color_palette(color, n, skip_border=1):
     """

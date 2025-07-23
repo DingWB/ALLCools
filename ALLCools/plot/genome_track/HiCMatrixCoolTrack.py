@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import cm, colors
 from pygenometracks.tracks.GenomeTrack import GenomeTrack
 from pygenometracks.utilities import change_chrom_names
+from ../color import get_cmap
 
 DEFAULT_MATRIX_COLORMAP = "RdYlBu_r"
 logging.basicConfig(level=logging.DEBUG)

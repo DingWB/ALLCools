@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import cm, colors
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from .color import plot_colorbar
+from .color import plot_colorbar,get_cmap
 from .utilities import tight_hue_range
 
 

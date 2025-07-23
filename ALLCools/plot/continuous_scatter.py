@@ -3,11 +3,11 @@ import copy
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from matplotlib.cm import ScalarMappable, get_cmap
+from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from .color import plot_colorbar
+from .color import plot_colorbar,get_cmap
 from .contour import density_contour
 from .text_anno_scatter import _text_anno_scatter
 from .utilities import (
