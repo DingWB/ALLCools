@@ -28,8 +28,8 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
         ndarray = False
 
     if ndarray:
-        cell_rate_mean = np.nanmean(raw_frac, axis=1) #shape=(No. of cells, 2), 2 mc_types
-        cell_rate_var = np.nanvar(raw_frac, axis=1)
+        cell_rate_mean = np.nanmean(raw_frac, axis=1) #row mean, shape=(No. of cells, 2), 2 mc_types
+        cell_rate_var = np.nanvar(raw_frac, axis=1) # row std, row are 
     else:
         # assume xr.DataArray
         if var_dim is None:
@@ -339,7 +339,6 @@ def obj_to_str(ds, coord_dtypes=None):
                 ds.coords[k] = v.load().astype(str)
     return
 
-
 def write_ordered_chunks(
     chunks_to_write,
     final_path,
@@ -362,13 +361,16 @@ def write_ordered_chunks(
     # string dtype is set to coord maximum length, so need to load all coords to determine
     # otherwise the chunk writing will truncate string coords if the dtype length is wrong
     coord_dtypes = {k: v.dtype for k, v in total_ds.coords.items()}
+    # dtype U15 means a Unicode string with a maximum length of 15 characters.
     del total_ds
 
     # write chunks
     wrote = False
-    for _, output_path in sorted(chunks_to_write.items(), key=lambda _i: _i[0]):
+    for i, output_path in sorted(chunks_to_write.items(), key=lambda _i: _i[0]):
         # save chunk into the zarr
         chunk_ds = xr.open_dataset(output_path, engine=engine).load()
+        if chunk_ds.sizes.get(append_dim,0) == 0:
+            continue # fix bug for empty dms caused string-to-float error
         obj_to_str(chunk_ds, coord_dtypes)
         if dtype is not None:
             chunk_ds = chunk_ds.astype(dtype)

@@ -69,7 +69,7 @@ def _perform_rms_batch(output_dir, allc_paths, samples, region, max_row_count, n
 
     if total_counts.shape[0] == 0:
         return None
-    print(f"RMS tests for {total_counts.shape[0]} sites.")
+    print(f"RMS tests for {total_counts.shape[0]} sites on {region}")
 
     for pos, row in total_counts.iterrows():
         # table has two columns: mc and c
