@@ -7,12 +7,13 @@ authors = [
 maintainers = [
     { name = "Hanqing Liu", email = "hanliu@salk.edu" },
     { name = "Jingtian Zhou", email = "jzhou@salk.edu" },
-    { name = "Wei Tian", email = "wtian@salk.edu" }
+    { name = "Wei Tian", email = "wtian@salk.edu" },
+    { name = "Wubin Ding", email = "wding@salk.edu" }
 ]
 urls.Documentation = "https://lhqing.github.io/ALLCools/intro.html"
 urls.Source = "https://github.com/DingWB/ALLCools"
 urls.Home-page = "https://github.com/lhqing/ALLCools"
-version = "1.0.21"
+dynamic = ["version"]
 requires-python = ">=3.7"
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -103,11 +104,21 @@ exclude = '''
 '''
 
 [build-system]
-build-backend = "flit_core.buildapi"
+build-backend = "hatchling.build"
 requires = [
-    "flit_core >=3.4,<4",
+    "hatchling",
+    "hatch-vcs",
     "importlib_metadata>=0.7; python_version < '3.8'",
 ]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ALLCools"]
+
+[tool.hatch.build.targets.sdist]
+include = ["ALLCools"]
 
 [project.scripts]
 allcools = "ALLCools.__main__:main"
