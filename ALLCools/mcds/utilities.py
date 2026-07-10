@@ -13,8 +13,7 @@ import yaml
 
 log = logging.getLogger()
 
-
-def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=True, clip_norm_value=10,sigma=False):
+def calculate_posterior_mc_frac_deprecated(mc_da, cov_da, var_dim=None, normalize_per_cell=True, clip_norm_value=10,sigma=False):
     # so we can do post_frac only in a very small set of gene to prevent memory issue
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -45,6 +44,117 @@ def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=
     # calculate alpha beta value for each cell
     cell_a = (1 - cell_rate_mean) * (cell_rate_mean**2) / cell_rate_var - cell_rate_mean
     cell_b = cell_a * (1 / cell_rate_mean - 1)
+    # standard deviation: sigma=sqrt(ab/((a+b+1)(a+b)^2))
+    # posterior standard deviation: sigma=sqrt((a+mc)(b+cov-mc)/((a+b+cov+1)(a+b+cov)^2))
+    if sigma:
+        # standard deviation per gene per cell; post_sigma.sel(mc_type='CGN').to_pandas()
+        post_sigma=np.sqrt((cell_a+mc_da)*(cell_b+cov_da-mc_da) / ((cell_a+cell_b+cov_da+1)*(cell_a+cell_b+cov_da)**2))
+
+    # cell specific posterior rate
+    post_frac: Union[np.ndarray, xr.DataArray]
+    if ndarray:
+        post_frac = (mc_da + cell_a[:, None]) / (cov_da + cell_a[:, None] + cell_b[:, None])
+    else:
+        post_frac = (mc_da + cell_a) / (cov_da + cell_a + cell_b) #(cell: 6144, gene: 38043, mc_type: 2)
+
+    if normalize_per_cell:
+        # there are two ways of normalizing per cell, by posterior or prior mean:
+        # prior_mean = cell_a / (cell_a + cell_b)
+        # posterior_mean = post_rate.mean(dim=var_dim)
+
+        # Here I choose to use prior_mean to normalize cell,
+        # therefore all cov == 0 features will have normalized rate == 1 in all cells.
+        # i.e. 0 cov feature will provide no info
+        prior_mean = cell_a / (cell_a + cell_b)
+        if ndarray:
+            post_frac = post_frac / prior_mean[:, None] #[:,None] = transpose, from 1d to 2d.
+        else:
+            post_frac = post_frac / prior_mean
+        if clip_norm_value is not None:
+            if isinstance(post_frac, np.ndarray):
+                # np.ndarray
+                post_frac[post_frac > clip_norm_value] = clip_norm_value
+            else:
+                # xarray.DataArray
+                post_frac = post_frac.where(post_frac < clip_norm_value, clip_norm_value)
+    if ndarray:
+        cell_a=cell_a[:,None] #add a empty dimension: mc_type
+        cell_b=cell_b[:,None]
+    if sigma:
+        return post_frac,cell_a,cell_b,post_sigma
+    else:
+        return post_frac,cell_a,cell_b
+    
+def calculate_posterior_mc_frac(mc_da, cov_da, var_dim=None, normalize_per_cell=True, clip_norm_value=10,sigma=False):
+    # Beta-Binomial moment estimation (method 3 in ALLCools/mcds/readme.md).
+    # Each feature i of a cell has coverage n_i (cov_da) and methylated count k_i (mc_da),
+    # with p_i ~ Beta(alpha, beta) and k_i | p_i ~ Binomial(n_i, p_i).
+    # Unlike the pure-Beta MoM (which fits mean/var of the observed rate mc/cov and thus
+    # mixes in the binomial sampling noise), this estimator corrects for coverage via the
+    # over-dispersion factor [1 + (n_i - 1) * rho], so it handles unequal coverage.
+    eps = 1e-6
+
+    if isinstance(mc_da, np.ndarray):
+        # np.ndarray
+        ndarray = True
+    else:  # xarray.core.dataarray.DataArray
+        ndarray = False
+
+    # reduce (sum, skipping NaN) over the feature/var dimension
+    def _reduce_sum(x):
+        if ndarray:
+            return np.nansum(x, axis=1)
+        elif var_dim is None:
+            return x.sum(axis=1)  # xarray skips NaN by default
+        else:
+            return x.sum(dim=var_dim)
+
+    # broadcast a per-cell quantity back against the feature dimension
+    def _broadcast(x):
+        if ndarray:
+            return x[:, None]
+        else:
+            return x  # xarray auto-broadcasts by dim name
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # here we expect true_divide / invalid-value warnings due to cov == 0
+        # only sites with coverage contribute to the estimation
+        valid = cov_da > 0
+
+        # first moment -> mu (pooled global mc/cov per cell): mu = sum_i k_i / sum_i n_i
+        sum_k = _reduce_sum(mc_da)
+        sum_n = _reduce_sum(cov_da)
+        # number of valid sites per cell (N) and sum_i (n_i - 1) = sum_n - N
+        n_sites = _reduce_sum(valid)
+        sum_n_minus_1 = sum_n - n_sites
+
+        mu = sum_k / sum_n
+        mu = np.clip(mu, eps, 1 - eps)  # avoid log/divide divergence
+
+        # second moment -> rho via a Pearson-type over-dispersion statistic:
+        # X = sum_i (k_i - n_i * mu)^2 / (n_i * mu * (1 - mu)),  E[X] = N + rho * sum_i (n_i - 1)
+        mu_b = _broadcast(mu)
+        resid2 = (mc_da - cov_da * mu_b) ** 2
+        denom = cov_da * mu_b * (1 - mu_b)
+        term = resid2 / denom  # NaN/inf where cov == 0
+        if ndarray:
+            term = np.where(valid, term, 0.0)
+        else:
+            term = term.where(valid, 0.0)
+        pearson_x = _reduce_sum(term)
+
+        # solve X = E[X] for the intra-site correlation / over-dispersion rho
+        rho = (pearson_x - n_sites) / sum_n_minus_1
+        # rho <= 0 -> sampling noise dominates -> strong prior (large kappa)
+        # rho -> 1  -> almost no shrinkage (kappa -> 0)
+        rho = np.clip(rho, eps, 1 - eps)
+
+        # convert (mu, rho) to Beta parameters via concentration kappa = (1 - rho) / rho
+        kappa = (1 - rho) / rho
+        cell_a = mu * kappa  # alpha = mu * kappa
+        cell_b = (1 - mu) * kappa  # beta = (1 - mu) * kappa
+
     # standard deviation: sigma=sqrt(ab/((a+b+1)(a+b)^2))
     # posterior standard deviation: sigma=sqrt((a+mc)(b+cov-mc)/((a+b+cov+1)(a+b+cov)^2))
     if sigma:
