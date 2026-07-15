@@ -360,7 +360,9 @@ class MCDS(xr.Dataset):
         normalize_per_cell=True,
         clip_norm_value=10,
         da_suffix="frac",
-        sigma=False
+        sigma=False,
+        hvf_stats=True,
+        hvf_frac="posterior"
     ):
         """
         Add posterior mC rate data array for certain feature type (var_dim).
@@ -380,6 +382,20 @@ class MCDS(xr.Dataset):
         sigma
             Whether to calculate the posterior standard deviation, will be 
             added into adata.layers['sigma']
+        hvf_stats
+            If True, also store the additive per-feature HVF accumulators
+            (covered-cell count and the sum / sum-of-squares of the mC fraction
+            over covered cells) as ``{var_dim}_hvf_n_cov``, ``{var_dim}_hvf_sum``
+            and ``{var_dim}_hvf_sum_sq`` coords, so that get_adata exposes them
+            as adata.var['hvf_n_cov' / 'hvf_sum' / 'hvf_sum_sq']. These are
+            additive across cells (and merged datasets), allowing
+            mean/var/dispersion to be reconstructed later.
+        hvf_frac
+            Which fraction the HVF accumulators are computed on: 'posterior'
+            (default) uses the empirical-Bayes posterior fraction
+            ``(mc + a) / (cov + a + b)`` (un-normalized), which shrinks noisy
+            low-coverage estimates toward the per-cell prior mean and gives a
+            cleaner biological-variance signal; 'raw' uses the plain ``mc/cov``.
         """
         var_dim = self._verify_dim(var_dim, mode="var")
 
@@ -408,7 +424,67 @@ class MCDS(xr.Dataset):
         if sigma:
             self[da + "_sigma"] = post_sigma
         # self["prior_mean"] = prior_mean
+        if hvf_stats:
+            # When normalize_per_cell is False, `frac` already IS the
+            # un-normalized posterior fraction (mc + a)/(cov + a + b), so reuse
+            # it to avoid recomputing the same expression in _add_hvf_stats.
+            # When normalize_per_cell is True, `frac` is per-cell normalized /
+            # clipped (wrong scale for variance stats), so pass None to force a
+            # fresh un-normalized posterior there.
+            reuse_frac = frac if (hvf_frac == "posterior" and not normalize_per_cell) else None
+            self._add_hvf_stats(var_dim=var_dim, da=da, method=hvf_frac, frac=reuse_frac)
         return 
+
+    def _add_hvf_stats(self, var_dim, da, method="posterior", frac=None):
+        """Store additive per-feature HVF accumulators as ``var_dim`` coords.
+
+        For each feature, over the cells it is covered in (cov > 0), computes
+        the covered-cell count and the sum / sum-of-squares of the mC fraction.
+        With ``method='posterior'`` (default) the empirical-Bayes posterior
+        fraction ``(mc + a) / (cov + a + b)`` is used (un-normalized; ``a``/``b``
+        are the per-cell beta prior ``cell_a``/``cell_b`` stored by
+        ``add_mc_frac``), which shrinks noisy low-coverage estimates toward the
+        per-cell prior mean and yields a cleaner biological-variance signal;
+        ``method='raw'`` (or when ``cell_a``/``cell_b`` are absent) falls back to
+        the plain ``mc/cov`` fraction. If ``frac`` is given it is used directly
+        (the caller passes the already-computed un-normalized posterior to avoid
+        recomputing it). These three quantities are additive across cells (and
+        thus across merged datasets), so per-feature mean, var, dispersion and
+        normalized dispersion can be reconstructed later (see pym3c
+        ``MultiAdata.select_hvf``). Stored as coords ``{var_dim}_hvf_n_cov``,
+        ``{var_dim}_hvf_sum`` and ``{var_dim}_hvf_sum_sq`` so that ``get_adata``
+        (via ``_make_obs_df_var_df``) surfaces them as adata.var['hvf_n_cov' /
+        'hvf_sum' / 'hvf_sum_sq'].
+        """
+        da_cov = self[da].sel(count_type="cov")
+        # obs (cell) dim = the dim that is neither the feature nor mc_type
+        obs_dims = [d for d in da_cov.dims if d not in (var_dim, "mc_type")]
+        if len(obs_dims) != 1:
+            # unexpected layout; skip rather than store a wrong reduction
+            return
+        obs_dim = obs_dims[0]
+        covered = da_cov > 0
+        if frac is None:
+            da_mc = self[da].sel(count_type="mc")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")  # cov == 0 -> divide warning
+                if method == "posterior" and ("cell_a" in self) and ("cell_b" in self):
+                    # empirical-Bayes posterior fraction (mc + a)/(cov + a + b),
+                    # un-normalized (NOT the per-cell-normalized / clipped X value):
+                    # shrinks low-coverage estimates toward the per-cell prior mean,
+                    # removing most binomial sampling noise for a cleaner HVF signal.
+                    cell_a = self["cell_a"]
+                    cell_b = self["cell_b"]
+                    frac = (da_mc + cell_a) / (da_cov + cell_a + cell_b)
+                else:
+                    # plain raw fraction mc/cov
+                    frac = da_mc / da_cov
+        # keep only covered cells so the sums match the covered-cell count
+        frac = frac.where(covered)
+        self.coords[f"{var_dim}_hvf_n_cov"] = covered.sum(dim=obs_dim)
+        self.coords[f"{var_dim}_hvf_sum"] = frac.sum(dim=obs_dim)  # skipna
+        self.coords[f"{var_dim}_hvf_sum_sq"] = (frac ** 2).sum(dim=obs_dim)
+        return
 
     def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value,sigma=False):
         """Calculate mC frac data array for certain feature type (var_dim)."""
