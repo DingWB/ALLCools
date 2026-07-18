@@ -491,13 +491,18 @@ def bam_to_allc(
     if use_chroms is not None:
         # only consider chromosomes listed in chrom_size file
         bam_chroms_index = pd.Index([i for i in bam_chroms_index if i in use_chroms])
-    unknown_chroms = [i for i in bam_chroms_index if i not in fai_df.index]
-    if len(unknown_chroms) != 0:
-        unknown_chroms = " ".join(unknown_chroms)
-        raise IndexError(
-            f"BAM file contain unknown chromosomes: {unknown_chroms}\n"
-            "Make sure you use the same genome FASTA file for mapping and bam-to-allc."
-        )
+        unknown_chroms = [i for i in bam_chroms_index if i not in fai_df.index]
+        if len(unknown_chroms) != 0:
+            unknown_chroms = " ".join(unknown_chroms)
+            raise IndexError(
+                f"BAM file contain unknown chromosomes: {unknown_chroms}\n"
+                "Make sure you use the same genome FASTA file for mapping and bam-to-allc."
+            )
+    else:
+        # no chrom_size given: only use chromosomes shared by BAM and FASTA, so
+        # contigs missing from the FASTA (e.g. decoy contigs) are ignored instead
+        # of raising an error or hanging the parser.
+        use_chroms = {i for i in bam_chroms_index if i in fai_df.index}
 
     # if parallel, chunk genome
     if cpu > 1:
