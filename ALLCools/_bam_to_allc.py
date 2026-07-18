@@ -180,8 +180,23 @@ def _bam_to_allc_worker(
 ):
     """None parallel bam_to_allc worker function, call by bam_to_allc."""
     # mpileup
+    region_bed_path = None
     if region is None:
-        mpileup_cmd = f"samtools mpileup -Q {min_base_quality} " f"-q {min_mapq} -B -f {reference_fasta} {bam_path}"
+        # if use_chroms is given, restrict mpileup to those chromosomes via a BED
+        # file (-l). Otherwise mpileup piles up the whole BAM, including decoy/alt
+        # contigs whose pathological high-coverage sites can hang the parser.
+        region_arg = ""
+        if use_chroms is not None:
+            target_chroms = [c for c in fai_df.index if c in use_chroms]
+            region_bed_path = f"{output_path}.mpileup_regions.bed"
+            with open(region_bed_path, "w") as bed_f:
+                for chrom in target_chroms:
+                    bed_f.write(f"{chrom}\t0\t{int(fai_df.loc[chrom, 'LENGTH'])}\n")
+            region_arg = f"-l {region_bed_path} "
+        mpileup_cmd = (
+            f"samtools mpileup -Q {min_base_quality} "
+            f"-q {min_mapq} -B {region_arg}-f {reference_fasta} {bam_path}"
+        )
         pipes = subprocess.Popen(
             shlex.split(mpileup_cmd),
             stdout=subprocess.PIPE,
@@ -352,6 +367,9 @@ def _bam_to_allc_worker(
         output_file_handler.write(out)
     result_handle.close()
     output_file_handler.close()
+
+    if region_bed_path is not None and os.path.exists(region_bed_path):
+        os.remove(region_bed_path)
 
     if tabix:
         subprocess.run(shlex.split(f"tabix -b 2 -e 2 -s 1 {output_path}"), check=True)
