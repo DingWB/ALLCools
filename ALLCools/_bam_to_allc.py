@@ -43,7 +43,6 @@ import pandas as pd
 import pysam
 import glob
 import pickle
-import random
 from ._doc import *
 from ._open import open_allc, open_bam
 from .utilities import genome_region_chunks
@@ -76,33 +75,12 @@ def determine_method(bam_path):
         )
     return is_ct_func
 
-def _convert_bam_strandness(
-        in_bam_path, out_bam_path,min_mapq=0,min_base_quality=1,
-        correct_gc_bias=False,gc_content=None,
-        bin_size=500,num_bins=50, frac=0.2,it=3, delta=0.01):
-    if correct_gc_bias:
-        if not os.path.exists(f"{in_bam_path}.correction_factor.pkl"):
-            calculate_mean_cov(
-                gc_content=gc_content,bam_file=in_bam_path,min_mapq=min_mapq,
-                min_base_quality=min_base_quality,bin_size=bin_size,
-                num_bins=num_bins, frac=frac,it=it, delta=delta
-                )
-        f=open(f"{in_bam_path}.correction_factor.pkl",'rb')
-        factors=pickle.load(f)
-        f.close()
-    else:
-        factors=None
+def _convert_bam_strandness(in_bam_path, out_bam_path):
     is_ct_func = determine_method(in_bam_path)
     with pysam.AlignmentFile(in_bam_path) as in_bam, pysam.AlignmentFile(
         out_bam_path, header=in_bam.header, mode="wb"
     ) as out_bam:
         for read in in_bam:
-            bin_id=f"{read.reference_name}-{read.reference_start // bin_size}" #read.reference_start is 0-based
-            if factors is not None and bin_id in factors:
-                factor=factors[bin_id] # between 0 - 1
-                if random.random() > factor:
-                    continue # skip this read to perform downsampling for the regions with high coverage caused by GC bias
-
             if is_ct_func(read):
                 read.is_forward = True
                 if read.is_paired:
@@ -198,7 +176,7 @@ def _bam_to_allc_worker(
     bam_path,reference_fasta,fai_df,output_path,
     region=None,num_upstr_bases=0,num_downstr_bases=2,
     buffer_line_number=100000,min_mapq=0,min_base_quality=1,
-    compress_level=5,tabix=True,save_count_df=False,
+    compress_level=5,tabix=True,save_count_df=False,use_chroms=None,
 ):
     """None parallel bam_to_allc worker function, call by bam_to_allc."""
     # mpileup
@@ -247,8 +225,11 @@ def _bam_to_allc_worker(
 
     # process mpileup result
     for line in result_handle:
-        total_line += 1
         fields = line.split("\t")
+        # only consider chromosomes listed in chrom_size file
+        if use_chroms is not None and fields[0] not in use_chroms:
+            continue
+        total_line += 1
         fields[2] = fields[2].upper()
         pos = int(fields[1]) - 1
         # if chrom changed, read whole chrom seq from fasta
@@ -413,8 +394,7 @@ def bam_to_allc(
     compress_level=5,
     save_count_df=False,
     convert_bam_strandness=True,keep_temp=False,
-    correct_gc_bias=False,gc_content=None,bin_size=500,
-    num_bins=50, frac=0.2,it=3, delta=0.01
+    chrom_size=None,
 ):
     """\
     Generate 1 ALLC file from 1 position sorted BAM file via samtools mpileup.
@@ -447,6 +427,10 @@ def bam_to_allc(
         If true, save an ALLC context count table next to ALLC file.
     convert_bam_strandness
         {convert_bam_strandness_doc}
+    chrom_size
+        Path to a chromosome size file whose first column lists chromosome names.
+        If provided, only chromosomes contained in this file are processed; BAM
+        contigs not listed (e.g. decoy contigs) are ignored.
 
     Returns
     -------
@@ -463,13 +447,19 @@ def bam_to_allc(
         raise FileNotFoundError("Reference fasta not indexed. Use samtools faidx to index it and run again.")
     fai_df = _read_faidx(pathlib.Path(reference_fasta + ".fai"))
 
+    # optionally restrict to chromosomes listed in chrom_size file (first column)
+    if chrom_size is not None:
+        chrom_size = os.path.expanduser(str(chrom_size))
+        use_chroms = set(
+            pd.read_csv(chrom_size, sep="\t", header=None, usecols=[0])[0].astype(str)
+        )
+    else:
+        use_chroms = None
+
     if convert_bam_strandness:
         temp_bam_path = f"{output_path}.temp.bam"
         _convert_bam_strandness(
-            in_bam_path=bam_path, out_bam_path=temp_bam_path,
-            min_mapq=min_mapq,min_base_quality=min_base_quality,
-            correct_gc_bias=correct_gc_bias,gc_content=gc_content,
-            bin_size=bin_size,num_bins=num_bins, frac=frac,it=it, delta=delta)
+            in_bam_path=bam_path, out_bam_path=temp_bam_path)
         bam_path = temp_bam_path
 
     if not pathlib.Path(bam_path + ".bai").exists():
@@ -478,6 +468,9 @@ def bam_to_allc(
     # check chromosome between BAM and FASTA
     # samtools have a bug when chromosome not match...
     bam_chroms_index = _get_bam_chrom_index(bam_path)
+    if use_chroms is not None:
+        # only consider chromosomes listed in chrom_size file
+        bam_chroms_index = pd.Index([i for i in bam_chroms_index if i in use_chroms])
     unknown_chroms = [i for i in bam_chroms_index if i not in fai_df.index]
     if len(unknown_chroms) != 0:
         unknown_chroms = " ".join(unknown_chroms)
@@ -526,6 +519,7 @@ def bam_to_allc(
                     "compress_level": compress_level,
                     "tabix": False,
                     "save_count_df": False,
+                    "use_chroms": use_chroms,
                 }
                 future_dict[executor.submit(_bam_to_allc_worker, **_kwargs)] = batch_id
 
@@ -583,7 +577,8 @@ def bam_to_allc(
             min_base_quality=min_base_quality,
             compress_level=compress_level,
             tabix=tabix,
-            save_count_df=save_count_df
+            save_count_df=save_count_df,
+            use_chroms=use_chroms,
         )
 
         # clean up temp bam
@@ -828,7 +823,6 @@ def test():
                 compress_level=5,
                 save_count_df=True,
                 convert_bam_strandness=True,keep_temp=True,
-                correct_gc_bias=True,gc_content=gc_content
                 )
     
     # samtools depth -o depth.tsv -Q 10 -q 20 -@ 8 CEMBAL_12AR_M1_P2-5-M17-P21.final.bam
