@@ -481,9 +481,19 @@ class MCDS(xr.Dataset):
                     frac = da_mc / da_cov
         # keep only covered cells so the sums match the covered-cell count
         frac = frac.where(covered)
-        self.coords[f"{var_dim}_hvf_n_cov"] = covered.sum(dim=obs_dim)
-        self.coords[f"{var_dim}_hvf_sum"] = frac.sum(dim=obs_dim)  # skipna
-        self.coords[f"{var_dim}_hvf_sum_sq"] = (frac ** 2).sum(dim=obs_dim)
+        n_cov = covered.sum(dim=obs_dim)
+        hvf_sum = frac.sum(dim=obs_dim)  # skipna
+        hvf_sum_sq = (frac ** 2).sum(dim=obs_dim)
+        # `.sel(count_type=...)` leaves `count_type` (and possibly `mc_type`) as
+        # scalar coords on these reductions; drop them so assigning to self.coords
+        # does not clash with the existing `count_type` dimension.
+        drop_coords = ["count_type", "mc_type"]
+        n_cov = n_cov.drop_vars(drop_coords, errors="ignore")
+        hvf_sum = hvf_sum.drop_vars(drop_coords, errors="ignore")
+        hvf_sum_sq = hvf_sum_sq.drop_vars(drop_coords, errors="ignore")
+        self.coords[f"{var_dim}_hvf_n_cov"] = n_cov
+        self.coords[f"{var_dim}_hvf_sum"] = hvf_sum
+        self.coords[f"{var_dim}_hvf_sum_sq"] = hvf_sum_sq
         return
 
     def _calculate_frac(self, var_dim, da, normalize_per_cell, clip_norm_value,sigma=False):
