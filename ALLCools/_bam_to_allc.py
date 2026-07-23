@@ -243,7 +243,7 @@ def _bam_to_allc_worker(
     # process mpileup result
     for line in result_handle:
         fields = line.split("\t")
-        # only consider chromosomes listed in chrom_size file
+        # only consider chromosomes in the chroms whitelist
         if use_chroms is not None and fields[0] not in use_chroms:
             continue
         total_line += 1
@@ -414,7 +414,7 @@ def bam_to_allc(
     compress_level=5,
     save_count_df=False,
     convert_bam_strandness=True,keep_temp=False,
-    chrom_size=None,
+    chroms=None,
 ):
     """\
     Generate 1 ALLC file from 1 position sorted BAM file via samtools mpileup.
@@ -447,10 +447,13 @@ def bam_to_allc(
         If true, save an ALLC context count table next to ALLC file.
     convert_bam_strandness
         {convert_bam_strandness_doc}
-    chrom_size
-        Path to a chromosome size file whose first column lists chromosome names.
-        If provided, only chromosomes contained in this file are processed; BAM
-        contigs not listed (e.g. decoy contigs) are ignored.
+    chroms
+        Restrict processing to a whitelist of chromosomes. Accepts a list of
+        names, a comma-separated string ('chr1,chr2'), or a path to a
+        chromosome-size / .fai file (first column). If provided, only the
+        listed chromosomes are processed; BAM contigs not listed (e.g. decoy
+        contigs) are ignored. Consistent with ``cytozip.bam.bam_to_cz``'s
+        ``chroms`` parameter.
 
     Returns
     -------
@@ -467,14 +470,25 @@ def bam_to_allc(
         raise FileNotFoundError("Reference fasta not indexed. Use samtools faidx to index it and run again.")
     fai_df = _read_faidx(pathlib.Path(reference_fasta + ".fai"))
 
-    # optionally restrict to chromosomes listed in chrom_size file (first column)
-    if chrom_size is not None:
-        chrom_size = os.path.expanduser(str(chrom_size))
-        use_chroms = set(
-            pd.read_csv(chrom_size, sep="\t", header=None, usecols=[0])[0].astype(str)
-        )
-    else:
+    # optionally restrict to a whitelist of chromosomes. Consistent with
+    # cytozip.bam.bam_to_cz `chroms`: accepts a list/tuple/set of names, a
+    # comma-separated string, or a path to a chrom-size / .fai file (first col).
+    if chroms is None:
         use_chroms = None
+    elif isinstance(chroms, (list, tuple, set)):
+        use_chroms = {str(c) for c in chroms}
+    else:
+        chroms_str = str(chroms)
+        chroms_path = os.path.expanduser(chroms_str)
+        if os.path.exists(chroms_path):
+            use_chroms = set(
+                pd.read_csv(chroms_path, sep="\t", header=None,
+                            usecols=[0])[0].astype(str)
+            )
+        elif "," in chroms_str:
+            use_chroms = {c for c in chroms_str.split(",") if c}
+        else:
+            use_chroms = {chroms_str}
 
     if convert_bam_strandness:
         temp_bam_path = f"{output_path}.temp.bam"
@@ -489,7 +503,7 @@ def bam_to_allc(
     # samtools have a bug when chromosome not match...
     bam_chroms_index = _get_bam_chrom_index(bam_path)
     if use_chroms is not None:
-        # only consider chromosomes listed in chrom_size file
+        # only consider chromosomes in the chroms whitelist
         bam_chroms_index = pd.Index([i for i in bam_chroms_index if i in use_chroms])
         unknown_chroms = [i for i in bam_chroms_index if i not in fai_df.index]
         if len(unknown_chroms) != 0:
@@ -499,7 +513,7 @@ def bam_to_allc(
                 "Make sure you use the same genome FASTA file for mapping and bam-to-allc."
             )
     else:
-        # no chrom_size given: only use chromosomes shared by BAM and FASTA, so
+        # no chroms given: only use chromosomes shared by BAM and FASTA, so
         # contigs missing from the FASTA (e.g. decoy contigs) are ignored instead
         # of raising an error or hanging the parser.
         use_chroms = {i for i in bam_chroms_index if i in fai_df.index}
