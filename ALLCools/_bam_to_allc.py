@@ -520,6 +520,10 @@ def bam_to_allc(
 
     # if parallel, chunk genome
     if cpu > 1:
+        # the region-parallel path below is not implemented (raises NotImplementedError)
+        logging.warning(f"bam_to_allc: cpu={cpu} is not supported, using cpu=1.")
+        cpu = 1
+    if cpu > 1:
         regions = genome_region_chunks(reference_fasta + ".fai", bin_length=100000000, combine_small=False)
     else:
         regions = None
