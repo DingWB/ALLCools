@@ -221,6 +221,14 @@ def bam_to_allc_register_subparser(subparser):
     )
     parser.set_defaults(convert_bam_strandness=False)
 
+    parser.add_argument(
+        "--chroms",
+        type=str,
+        default=None,
+        help="Restrict to these chromosomes: a chrom-size / .fai file path (first column), "
+        "or a comma-separated list of names. Default: all chroms in both BAM and FASTA.",
+    )
+
 
 def standardize_allc_register_subparser(subparser):
     parser = subparser.add_parser(
